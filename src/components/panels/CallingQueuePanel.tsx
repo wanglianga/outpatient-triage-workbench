@@ -10,7 +10,6 @@ import {
   DragOverEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -73,7 +72,6 @@ export function CallingQueuePanel() {
   const {
     waitingQueue,
     currentCall,
-    selectedPatient,
     dragOverIndex,
     setDragOverIndex,
     movePatientInQueue,

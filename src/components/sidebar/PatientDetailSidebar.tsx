@@ -4,7 +4,6 @@ import { StatusBadge } from '../common/StatusBadge';
 import {
   X,
   User,
-  Calendar,
   Clock,
   FileText,
   MapPin,

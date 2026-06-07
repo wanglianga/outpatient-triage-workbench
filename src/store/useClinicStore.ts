@@ -87,7 +87,7 @@ export const useClinicStore = create<ClinicState>((set, get) => ({
   },
 
   recallPatient: (patientId) => {
-    const { waitingQueue, currentCall } = get();
+    const { waitingQueue } = get();
     const patientIndex = waitingQueue.findIndex((p) => p.id === patientId);
     if (patientIndex <= 0) return;
 
