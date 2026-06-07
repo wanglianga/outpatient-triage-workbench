@@ -44,6 +44,7 @@ export const getStatusLabel = (status: PatientStatus): string => {
     waiting: '候诊中',
     called: '已叫号',
     examing: '检查中',
+    'in-transit': '检查途中',
     missed: '已过号',
     returned: '已回归',
     done: '已完成',
@@ -56,6 +57,7 @@ export const getStatusColor = (status: PatientStatus): string => {
     waiting: 'bg-blue-50 text-blue-700',
     called: 'bg-green-50 text-green-700',
     examing: 'bg-indigo-50 text-indigo-700',
+    'in-transit': 'bg-orange-50 text-orange-700',
     missed: 'bg-red-50 text-red-700',
     returned: 'bg-teal-50 text-teal-700',
     done: 'bg-gray-50 text-gray-600',
@@ -105,4 +107,25 @@ export const getExamStatusColor = (status: ExamItem['status']): string => {
 
 export const getElapsedMinutes = (startTime: Date): number => {
   return Math.floor((Date.now() - startTime.getTime()) / (1000 * 60));
+};
+
+export const getRemainingMinutes = (targetTime: Date): number => {
+  return Math.ceil((targetTime.getTime() - Date.now()) / (1000 * 60));
+};
+
+export const isExamOverdue = (estimatedReturnTime: Date): boolean => {
+  return Date.now() > estimatedReturnTime.getTime();
+};
+
+export const formatExamReturnTime = (estimatedReturnTime: Date): string => {
+  const remaining = getRemainingMinutes(estimatedReturnTime);
+  if (remaining <= 0) {
+    return '已超时';
+  }
+  if (remaining < 60) {
+    return `预计 ${remaining} 分钟后返回`;
+  }
+  const hours = Math.floor(remaining / 60);
+  const mins = remaining % 60;
+  return mins > 0 ? `预计 ${hours} 小时 ${mins} 分钟后返回` : `预计 ${hours} 小时后返回`;
 };

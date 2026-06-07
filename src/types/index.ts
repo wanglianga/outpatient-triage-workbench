@@ -1,4 +1,4 @@
-export type PatientStatus = 'waiting' | 'called' | 'examing' | 'missed' | 'returned' | 'done';
+export type PatientStatus = 'waiting' | 'called' | 'examing' | 'in-transit' | 'missed' | 'returned' | 'done';
 
 export type Priority = 'normal' | 'elderly' | 'child' | 'emergency' | 'vip';
 
@@ -32,6 +32,10 @@ export interface Patient {
   actualWaitTime?: number;
   examType?: string;
   examRoom?: string;
+  examDepartment?: string;
+  examDepartureTime?: Date;
+  examEstimatedReturnTime?: Date;
+  examReturnReminded?: boolean;
   missedReason?: string;
   missedCount: number;
   notes?: string;

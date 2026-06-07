@@ -18,7 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useClinicStore } from '../../store/useClinicStore';
 import { PatientCard } from '../common/PatientCard';
-import { Mic, SkipForward, Clock, GripVertical, AlertCircle } from 'lucide-react';
+import { Mic, SkipForward, Clock, GripVertical, AlertCircle, Stethoscope, ArrowLeft } from 'lucide-react';
 import { formatTime } from '../../utils/formatters';
 
 interface SortablePatientCardProps {
@@ -72,12 +72,14 @@ export function CallingQueuePanel() {
   const {
     waitingQueue,
     currentCall,
+    inTransitPatients,
     dragOverIndex,
     setDragOverIndex,
     movePatientInQueue,
     callNextPatient,
     getAffectedPatients,
     markPatientMissed,
+    returnPatientFromExam,
   } = useClinicStore();
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -167,6 +169,34 @@ export function CallingQueuePanel() {
                 过号
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {inTransitPatients.length > 0 && (
+        <div className="px-4 py-3 bg-orange-50 border-b border-orange-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="w-4 h-4 text-orange-600" />
+              <span className="text-sm font-medium text-orange-900">检查途中 ({inTransitPatients.length})</span>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {inTransitPatients.map((patient) => (
+              <div key={patient.id} className="relative">
+                <PatientCard
+                  patient={patient}
+                  isSelected={false}
+                />
+                <button
+                  onClick={() => returnPatientFromExam(patient.id)}
+                  className="absolute top-3 right-3 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded hover:bg-green-200 transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  已返回
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

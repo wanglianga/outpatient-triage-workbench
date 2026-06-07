@@ -17,6 +17,7 @@ import {
 interface ClinicState {
   departments: Department[];
   waitingQueue: Patient[];
+  inTransitPatients: Patient[];
   currentCall: CallRecord | null;
   examItems: ExamItem[];
   missedRecords: MissedRecord[];
@@ -34,11 +35,15 @@ interface ClinicState {
   returnMissedPatient: (recordId: string) => void;
   updateExamStatus: (examId: string, status: ExamItem['status']) => void;
   getAffectedPatients: (fromIndex: number, toIndex: number) => Patient[];
+  sendPatientToExam: (patientId: string, examType: string, examDepartment: string, examRoom: string, estimatedDuration: number) => void;
+  returnPatientFromExam: (patientId: string) => void;
+  markExamReturnReminded: (patientId: string) => void;
 }
 
 export const useClinicStore = create<ClinicState>((set, get) => ({
   departments: mockDepartments,
   waitingQueue: mockPatients.filter((p) => p.status === 'waiting'),
+  inTransitPatients: mockPatients.filter((p) => p.status === 'in-transit'),
   currentCall: mockCurrentCall,
   examItems: mockExamItems,
   missedRecords: mockMissedRecords,
@@ -187,5 +192,95 @@ export const useClinicStore = create<ClinicState>((set, get) => ({
     const end = Math.max(fromIndex, toIndex);
 
     return waitingQueue.slice(start, end + 1);
+  },
+
+  sendPatientToExam: (patientId, examType, examDepartment, examRoom, estimatedDuration) => {
+    const { waitingQueue, currentCall, examItems } = get();
+    const now = new Date();
+    const estimatedReturnTime = new Date(now.getTime() + estimatedDuration * 60 * 1000);
+
+    let patient: Patient | undefined;
+    const newWaitingQueue = [...waitingQueue];
+    let newCurrentCall = currentCall;
+
+    if (currentCall && currentCall.patientId === patientId) {
+      patient = mockPatients.find((p) => p.id === patientId);
+      newCurrentCall = null;
+    } else {
+      const patientIndex = waitingQueue.findIndex((p) => p.id === patientId);
+      if (patientIndex >= 0) {
+        patient = waitingQueue[patientIndex];
+        newWaitingQueue.splice(patientIndex, 1);
+      }
+    }
+
+    if (!patient) return;
+
+    const inTransitPatient: Patient = {
+      ...patient,
+      status: 'in-transit',
+      examType,
+      examDepartment,
+      examRoom,
+      examDepartureTime: now,
+      examEstimatedReturnTime: estimatedReturnTime,
+      examReturnReminded: false,
+    };
+
+    const newExamItem: ExamItem = {
+      id: `exam-${Date.now()}`,
+      patientId: patient.id,
+      patientName: patient.name,
+      examType,
+      examRoom,
+      scheduledTime: now,
+      status: 'in-transit',
+      estimatedDuration,
+    };
+
+    set({
+      waitingQueue: newWaitingQueue,
+      inTransitPatients: [...get().inTransitPatients, inTransitPatient],
+      currentCall: newCurrentCall,
+      examItems: [newExamItem, ...examItems],
+    });
+
+    if (get().selectedPatient?.id === patientId) {
+      set({ selectedPatient: inTransitPatient });
+    }
+  },
+
+  returnPatientFromExam: (patientId) => {
+    const { inTransitPatients, waitingQueue } = get();
+    const patientIndex = inTransitPatients.findIndex((p) => p.id === patientId);
+    if (patientIndex < 0) return;
+
+    const patient = inTransitPatients[patientIndex];
+
+    const returnedPatient: Patient = {
+      ...patient,
+      status: 'returned',
+      examReturnReminded: false,
+    };
+
+    const newInTransit = [...inTransitPatients];
+    newInTransit.splice(patientIndex, 1);
+
+    set({
+      inTransitPatients: newInTransit,
+      waitingQueue: [returnedPatient, ...waitingQueue],
+    });
+
+    if (get().selectedPatient?.id === patientId) {
+      set({ selectedPatient: returnedPatient });
+    }
+  },
+
+  markExamReturnReminded: (patientId) => {
+    set((state) => ({
+      inTransitPatients: state.inTransitPatients.map((p) =>
+        p.id === patientId ? { ...p, examReturnReminded: true } : p
+      ),
+    }));
   },
 }));

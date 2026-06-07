@@ -1,6 +1,6 @@
 import { useClinicStore } from '../../store/useClinicStore';
-import { Stethoscope, MapPin, Clock, CheckCircle, Circle, CircleDashed, Activity } from 'lucide-react';
-import { formatTime, getExamStatusLabel, getExamStatusColor } from '../../utils/formatters';
+import { Stethoscope, MapPin, Clock, CheckCircle, Circle, CircleDashed, Activity, AlertTriangle, Phone } from 'lucide-react';
+import { formatTime, getExamStatusLabel, getExamStatusColor, isExamOverdue, getElapsedMinutes } from '../../utils/formatters';
 import type { ExamItem } from '../../types';
 
 const examSteps = [
@@ -47,7 +47,11 @@ function ExamStepIndicator({ status }: ExamStepIndicatorProps) {
 }
 
 export function ExamReminderPanel() {
-  const { examItems, updateExamStatus } = useClinicStore();
+  const { examItems, updateExamStatus, inTransitPatients, markExamReturnReminded } = useClinicStore();
+
+  const overduePatients = inTransitPatients.filter(
+    (p) => p.examEstimatedReturnTime && isExamOverdue(p.examEstimatedReturnTime)
+  );
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
@@ -57,6 +61,59 @@ export function ExamReminderPanel() {
           检查提醒
         </h3>
       </div>
+
+      {overduePatients.length > 0 && (
+        <div className="px-4 py-3 bg-red-50 border-b border-red-200">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <span className="text-sm font-medium text-red-900">超时未返回提醒 ({overduePatients.length})</span>
+          </div>
+          <div className="space-y-2">
+            {overduePatients.map((patient) => {
+              const overdueMinutes = patient.examEstimatedReturnTime
+                ? getElapsedMinutes(patient.examEstimatedReturnTime)
+                : 0;
+              return (
+                <div
+                  key={patient.id}
+                  className={`p-2 rounded-lg border text-xs ${
+                    patient.examReturnReminded
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-red-100 border-red-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-gray-900">{patient.name}</div>
+                      <div className="text-gray-600">{patient.examType} · {patient.examDepartment || patient.examRoom}</div>
+                      <div className="text-red-600 mt-0.5">
+                        已超时 {overdueMinutes} 分钟
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {!patient.examReturnReminded && (
+                        <button
+                          onClick={() => markExamReturnReminded(patient.id)}
+                          className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors flex items-center gap-1"
+                        >
+                          <Phone className="w-3 h-3" />
+                          电话确认
+                        </button>
+                      )}
+                      {patient.examReturnReminded && (
+                        <span className="px-2 py-1 bg-amber-200 text-amber-800 text-xs rounded">
+                          已提醒
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {examItems.map((exam) => (
           <div

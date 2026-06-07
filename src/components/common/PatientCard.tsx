@@ -1,8 +1,8 @@
 import type { Patient } from '../../types';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
-import { formatWaitTime, formatTime, getElapsedMinutes } from '../../utils/formatters';
-import { Clock, User } from 'lucide-react';
+import { formatWaitTime, formatTime, getElapsedMinutes, formatExamReturnTime, isExamOverdue } from '../../utils/formatters';
+import { Clock, User, MapPin, AlertTriangle } from 'lucide-react';
 
 interface PatientCardProps {
   patient: Patient;
@@ -77,6 +77,40 @@ export function PatientCard({
       {patient.notes && (
         <div className="mt-2 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
           备注：{patient.notes}
+        </div>
+      )}
+
+      {patient.status === 'in-transit' && patient.examEstimatedReturnTime && (
+        <div className={`mt-2 text-xs px-2 py-1.5 rounded border ${
+          isExamOverdue(patient.examEstimatedReturnTime)
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : 'bg-orange-50 border-orange-200 text-orange-700'
+        }`}>
+          <div className="flex items-center gap-1 mb-1">
+            {isExamOverdue(patient.examEstimatedReturnTime) ? (
+              <AlertTriangle className="w-3.5 h-3.5" />
+            ) : (
+              <Clock className="w-3.5 h-3.5" />
+            )}
+            <span className="font-medium">
+              {isExamOverdue(patient.examEstimatedReturnTime) ? '已超时未返回' : '检查途中'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            {patient.examDepartureTime && (
+              <span>离开：{formatTime(patient.examDepartureTime)}</span>
+            )}
+            <span>
+              {formatExamReturnTime(patient.examEstimatedReturnTime)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3" />
+            <span>{patient.examDepartment || patient.examRoom || '检查科室'}</span>
+          </div>
+          {patient.examType && (
+            <div className="mt-0.5">检查项目：{patient.examType}</div>
+          )}
         </div>
       )}
 
